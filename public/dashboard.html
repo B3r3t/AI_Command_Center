@@ -1,0 +1,2565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AGNTMKT Command Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        :root {
+            --agnt-orange: #FF7F30;
+            --agnt-black: #0D0D0D;
+            --surface-1: #141414;
+            --surface-2: #1A1A1A;
+            --surface-3: #202020;
+            --border: rgba(255, 255, 255, 0.06);
+            --text-primary: #FFFFFF;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --text-tertiary: rgba(255, 255, 255, 0.4);
+        }
+
+        [data-theme="light"] {
+            --agnt-black: #FFFFFF;
+            --surface-1: #F8F8F8;
+            --surface-2: #F0F0F0;
+            --surface-3: #E8E8E8;
+            --border: rgba(0, 0, 0, 0.08);
+            --text-primary: #0D0D0D;
+            --text-secondary: rgba(0, 0, 0, 0.6);
+            --text-tertiary: rgba(0, 0, 0, 0.4);
+        }
+        
+        body {
+            background: var(--agnt-black);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        /* Ambient background effect */
+        .ambient-bg {
+            position: fixed;
+            inset: 0;
+            background: 
+                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(255, 127, 48, 0.15), transparent),
+                radial-gradient(ellipse 60% 50% at 80% 50%, rgba(255, 127, 48, 0.08), transparent);
+            pointer-events: none;
+            z-index: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        [data-theme="light"] .ambient-bg {
+            opacity: 0.3;
+        }
+
+        /* Hero gradient text */
+        .hero-text {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1.1;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-accent {
+            color: var(--agnt-orange);
+            -webkit-text-fill-color: var(--agnt-orange);
+        }
+
+        /* Bento grid system */
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Premium card system */
+        .premium-card {
+            background: var(--surface-1);
+            border: 1px solid var(--border);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .premium-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 1.5rem;
+            padding: 1px;
+            background: linear-gradient(135deg, var(--agnt-orange), transparent);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .premium-card:hover::before {
+            opacity: 0.5;
+        }
+
+        .premium-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 127, 48, 0.2);
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.3),
+                0 0 40px rgba(255, 127, 48, 0.1);
+        }
+
+        /* Hero stat */
+        .hero-stat {
+            grid-column: span 3;
+        }
+
+        .hero-number {
+            font-size: clamp(3rem, 6vw, 5rem);
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            line-height: 1;
+            background: linear-gradient(135deg, var(--agnt-orange) 0%, #FFA366 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-tertiary);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-delta {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        /* Wide feature card */
+        .wide-card {
+            grid-column: span 6;
+        }
+
+        .full-card {
+            grid-column: span 12;
+        }
+
+        /* Progress visualization */
+        .progress-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .progress-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            cursor: pointer;
+            padding: 0.75rem;
+            margin: -0.75rem;
+            border-radius: 0.75rem;
+            transition: background 0.2s ease;
+        }
+
+        .progress-item:hover {
+            background: var(--surface-2);
+        }
+
+        .progress-label-group {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-width: 140px;
+        }
+
+        .progress-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .progress-indicator::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            background: inherit;
+            opacity: 0.2;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.2; }
+            50% { transform: scale(1.5); opacity: 0; }
+        }
+
+        .progress-bar-track {
+            flex: 1;
+            height: 4px;
+            background: var(--surface-2);
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--agnt-orange), #FFA366);
+            border-radius: 2px;
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .progress-bar-fill::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transform: translateX(-100%);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            to { transform: translateX(100%); }
+        }
+
+        .progress-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            min-width: 80px;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .progress-meta {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            min-width: 80px;
+            text-align: right;
+        }
+
+        /* Conversations table */
+        .conversations-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .conversations-table thead th {
+            font-size: 0.6875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-tertiary);
+            font-weight: 600;
+            text-align: left;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .conversations-table tbody tr {
+            transition: background 0.2s ease;
+            cursor: pointer;
+        }
+
+        .conversations-table tbody tr:hover {
+            background: var(--surface-2);
+        }
+
+        .conversations-table tbody tr.clickable {
+            cursor: pointer;
+        }
+
+        .conversations-table tbody tr.clickable:hover {
+            background: rgba(255, 127, 48, 0.05);
+            border-left: 3px solid var(--agnt-orange);
+        }
+
+        .conversations-table tbody td {
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9375rem;
+        }
+
+        .table-primary {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .table-secondary {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        /* Status badges */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: rgba(255, 127, 48, 0.1);
+            color: var(--agnt-orange);
+        }
+
+        .status-completed {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10B981;
+        }
+
+        .status-dormant {
+            background: rgba(107, 114, 128, 0.1);
+            color: #6B7280;
+        }
+
+        /* Channel badges */
+        .channel-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .channel-sms {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10B981;
+        }
+
+        .channel-email {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3B82F6;
+        }
+
+        /* Navigation */
+        .nav-link {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+        }
+
+        .nav-link:hover {
+            color: var(--text-primary);
+            background: var(--surface-2);
+        }
+
+        .nav-link.active {
+            color: var(--text-primary);
+            background: rgba(255, 127, 48, 0.1);
+        }
+
+        /* Theme toggle */
+        .theme-toggle {
+            width: 48px;
+            height: 24px;
+            background: var(--surface-2);
+            border-radius: 12px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            border: 1px solid var(--border);
+        }
+
+        .theme-toggle-thumb {
+            width: 18px;
+            height: 18px;
+            background: var(--text-primary);
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s ease;
+        }
+
+        .theme-toggle.active .theme-toggle-thumb {
+            transform: translateX(24px);
+        }
+
+        /* Location dropdown */
+        .location-dropdown {
+            position: relative;
+        }
+
+        .location-dropdown-button {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .location-dropdown-button:hover {
+            background: var(--surface-3);
+        }
+
+        .location-dropdown-menu {
+            position: absolute;
+            top: calc(100% + 0.5rem);
+            right: 0;
+            min-width: 250px;
+            max-height: 400px;
+            overflow-y: auto;
+            background: var(--surface-1);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            z-index: 100;
+            display: none;
+        }
+
+        .location-dropdown-menu.active {
+            display: block;
+        }
+
+        .location-dropdown-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .location-dropdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .location-dropdown-item:hover {
+            background: var(--surface-2);
+        }
+
+        .location-dropdown-item.selected {
+            background: rgba(255, 127, 48, 0.1);
+            color: var(--agnt-orange);
+        }
+
+        /* View states */
+        .view {
+            display: none;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        /* Conversation detail styles */
+        .profile-card {
+            background: var(--surface-1);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+        }
+
+        .profile-field {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .profile-field:last-child {
+            border-bottom: none;
+        }
+
+        .profile-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 0.5rem;
+            background: var(--surface-2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .message-thread {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .message-item {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .message-item.inbound {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--surface-2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            border: 2px solid var(--border);
+        }
+
+        .message-bubble {
+            max-width: 70%;
+            padding: 1rem 1.25rem;
+            border-radius: 1rem;
+            position: relative;
+        }
+
+        .message-item.outbound .message-bubble {
+            background: rgba(255, 127, 48, 0.1);
+            border: 1px solid rgba(255, 127, 48, 0.2);
+        }
+
+        .message-item.inbound .message-bubble {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+        }
+
+        .message-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+        }
+
+        .message-content {
+            font-size: 0.9375rem;
+            line-height: 1.6;
+            color: var(--text-primary);
+        }
+
+        .progress-ring {
+            width: 120px;
+            height: 120px;
+            position: relative;
+        }
+
+        .progress-ring-circle {
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+
+        .insight-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .milestone-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+        }
+
+        .milestone-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 0.5rem;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .metric-card-small {
+            padding: 1.5rem;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 127, 48, 0.3);
+            border-radius: 2px;
+        }
+
+        /* Info trigger */
+        .info-trigger {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            font-size: 0.625rem;
+            font-weight: 600;
+            color: var(--text-tertiary);
+            cursor: help;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .info-trigger:hover {
+            background: var(--agnt-orange);
+            border-color: var(--agnt-orange);
+            color: white;
+        }
+
+        .info-trigger:hover .info-popup {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .info-popup {
+            position: absolute;
+            bottom: calc(100% + 0.5rem);
+            left: 50%;
+            transform: translateX(-50%) translateY(4px);
+            width: 240px;
+            padding: 0.75rem 1rem;
+            background: rgba(255, 127, 48, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 0.75rem;
+            font-size: 0.75rem;
+            line-height: 1.5;
+            color: white;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            pointer-events: none;
+            z-index: 100;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .info-popup::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: rgba(255, 127, 48, 0.95);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .hero-stat { grid-column: span 6; }
+            .wide-card { grid-column: span 12; }
+        }
+
+        @media (max-width: 768px) {
+            .hero-stat { grid-column: span 12; }
+            .bento-grid { gap: 0.75rem; }
+            .premium-card { padding: 1.5rem; border-radius: 1rem; }
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-in {
+            animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+        }
+
+        .animate-delay-1 { animation-delay: 0.1s; }
+        .animate-delay-2 { animation-delay: 0.2s; }
+        .animate-delay-3 { animation-delay: 0.3s; }
+        .animate-delay-4 { animation-delay: 0.4s; }
+    </style>
+</head>
+<body data-theme="dark">
+    <!-- Ambient background -->
+    <div class="ambient-bg"></div>
+
+    <!-- Main container -->
+    <div style="position: relative; z-index: 1;">
+        
+        <!-- Header -->
+        <header style="padding: 2rem 3rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border);">
+            <div style="display: flex; align-items: center; gap: 3rem;">
+                <div style="font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em;">
+                    <span style="color: var(--agnt-orange);">AGNT</span><span style="color: var(--text-primary);">MKT</span>
+                </div>
+                <nav style="display: flex; gap: 0.5rem;">
+                    <button class="nav-link active" onclick="switchView('dashboard')">Dashboard</button>
+                    <button class="nav-link" onclick="switchView('conversations')">Conversations</button>
+                    <button class="nav-link" onclick="switchView('analytics')">Analytics</button>
+                </nav>
+            </div>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <!-- Theme Toggle -->
+                <div class="theme-toggle" onclick="toggleTheme()">
+                    <div class="theme-toggle-thumb"></div>
+                </div>
+
+                <!-- Location Filter -->
+                <div class="location-dropdown">
+                    <button class="location-dropdown-button" onclick="toggleLocationDropdown()">
+                        <span id="selectedLocation">All Locations</span>
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor">
+                            <path d="M3 4.5L6 7.5L9 4.5" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                    <div class="location-dropdown-menu" id="locationDropdown">
+                        <div class="location-dropdown-item selected" onclick="selectLocation('all', 'All Locations')">
+                            All Locations (140+)
+                        </div>
+                        <div class="location-dropdown-item" onclick="selectLocation('dallas-north', 'Dallas North')">
+                            Dallas North, TX
+                        </div>
+                        <div class="location-dropdown-item" onclick="selectLocation('phoenix', 'Phoenix Scottsdale')">
+                            Phoenix Scottsdale, AZ
+                        </div>
+                        <div class="location-dropdown-item" onclick="selectLocation('austin', 'Austin Downtown')">
+                            Austin Downtown, TX
+                        </div>
+                        <div class="location-dropdown-item" onclick="selectLocation('denver', 'Denver Tech Center')">
+                            Denver Tech Center, CO
+                        </div>
+                        <div class="location-dropdown-item" onclick="selectLocation('sandiego', 'San Diego UTC')">
+                            San Diego UTC, CA
+                        </div>
+                        <div class="location-dropdown-item" onclick="selectLocation('houston', 'Houston Galleria')">
+                            Houston Galleria, TX
+                        </div>
+                        <div class="location-dropdown-item" onclick="selectLocation('seattle', 'Seattle Bellevue')">
+                            Seattle Bellevue, WA
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Time Range -->
+                <select style="background: var(--surface-2); border: 1px solid var(--border); padding: 0.5rem 1rem; border-radius: 0.5rem; color: var(--text-primary); font-size: 0.875rem; cursor: pointer; outline: none;">
+                    <option>Last 7 Days</option>
+                    <option>Last 30 Days</option>
+                    <option>Last 90 Days</option>
+                </select>
+
+                <!-- System Status -->
+                <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 0.5rem;">
+                    <div style="width: 6px; height: 6px; border-radius: 50%; background: #10B981; box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);"></div>
+                    <span style="font-size: 0.75rem; color: #10B981; font-weight: 600;">LIVE</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dashboard View -->
+        <div id="dashboardView" class="view active">
+            <!-- Hero section -->
+            <section style="padding: 3rem 3rem 2rem;">
+                <div style="max-width: 1600px; margin: 0 auto;">
+                    <h1 class="hero-text animate-in">
+                        IMAGE Studios<br/>
+                        <span class="hero-accent">Command Center</span>
+                    </h1>
+                    <p style="font-size: 1.125rem; color: var(--text-secondary); margin-top: 1rem; max-width: 600px;" class="animate-in animate-delay-1">
+                        Real-time intelligence for your AI-powered lead nurturing platform
+                    </p>
+                </div>
+            </section>
+
+            <!-- Main content -->
+            <main style="padding: 0 3rem 3rem; max-width: 1600px; margin: 0 auto;">
+                
+                <!-- Hero stats grid -->
+                <div class="bento-grid" style="margin-bottom: 1rem;">
+                    
+                    <!-- Total Leads -->
+                    <div class="premium-card hero-stat animate-in animate-delay-1">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div class="stat-label">Total Leads</div>
+                            <div class="info-trigger">
+                                i
+                                <div class="info-popup">Total number of leads across all locations in your database, regardless of conversation status.</div>
+                            </div>
+                        </div>
+                        <div class="hero-number">2,847</div>
+                        <div class="stat-delta">
+                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" style="color: #10B981;">
+                                <path d="M6 9V3M3 6l3-3 3 3" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                            <span style="color: #10B981; font-weight: 600;">+124</span>
+                            <span>this week</span>
+                        </div>
+                    </div>
+
+                    <!-- Active Conversations -->
+                    <div class="premium-card hero-stat animate-in animate-delay-2">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div class="stat-label">Active</div>
+                            <div class="info-trigger">
+                                i
+                                <div class="info-popup">Conversations with status='active' currently being nurtured through your workflows.</div>
+                            </div>
+                        </div>
+                        <div class="hero-number">1,924</div>
+                        <div class="stat-delta">
+                            <span>68% of total</span>
+                        </div>
+                    </div>
+
+                    <!-- Response Rate -->
+                    <div class="premium-card hero-stat animate-in animate-delay-3">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div class="stat-label">Response Rate</div>
+                            <div class="info-trigger">
+                                i
+                                <div class="info-popup">Percentage of leads who replied to at least one message. Calculated from inbound messages / total conversations.</div>
+                            </div>
+                        </div>
+                        <div class="hero-number">68%</div>
+                        <div class="stat-delta">
+                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" style="color: #10B981;">
+                                <path d="M6 9V3M3 6l3-3 3 3" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                            <span style="color: #10B981; font-weight: 600;">+4%</span>
+                            <span>vs last week</span>
+                        </div>
+                    </div>
+
+                    <!-- Messages Today -->
+                    <div class="premium-card hero-stat animate-in animate-delay-4">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div class="stat-label">Messages Today</div>
+                            <div class="info-trigger">
+                                i
+                                <div class="info-popup">Total messages sent today across SMS and email channels from messages table.</div>
+                            </div>
+                        </div>
+                        <div class="hero-number">187</div>
+                        <div class="stat-delta">
+                            <span>SMS 124 • Email 63</span>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Middle section -->
+                <div class="bento-grid" style="margin-bottom: 1rem;">
+                    
+                    <!-- Conversation Pipeline -->
+                    <div class="premium-card wide-card animate-in animate-delay-2">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem;">
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <h2 style="font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em;">Conversation Pipeline</h2>
+                                <div class="info-trigger">
+                                    i
+                                    <div class="info-popup">Distribution of conversations by status with averaged intent scores from your database.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="progress-stack">
+                            <div class="progress-item">
+                                <div class="progress-label-group">
+                                    <div class="progress-indicator" style="background: var(--agnt-orange); box-shadow: 0 0 8px rgba(255, 127, 48, 0.5);"></div>
+                                    <span style="font-weight: 500;">Active</span>
+                                </div>
+                                <div class="progress-bar-track">
+                                    <div class="progress-bar-fill" style="width: 68%;"></div>
+                                </div>
+                                <div class="progress-value">1,924</div>
+                                <div class="progress-meta">Intent: 64</div>
+                            </div>
+
+                            <div class="progress-item">
+                                <div class="progress-label-group">
+                                    <div class="progress-indicator" style="background: #10B981; box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);"></div>
+                                    <span style="font-weight: 500;">Completed</span>
+                                </div>
+                                <div class="progress-bar-track">
+                                    <div class="progress-bar-fill" style="width: 19%; background: linear-gradient(90deg, #10B981, #34D399);"></div>
+                                </div>
+                                <div class="progress-value">547</div>
+                                <div class="progress-meta">Intent: 82</div>
+                            </div>
+
+                            <div class="progress-item">
+                                <div class="progress-label-group">
+                                    <div class="progress-indicator" style="background: #6B7280; box-shadow: 0 0 8px rgba(107, 114, 128, 0.5);"></div>
+                                    <span style="font-weight: 500;">Dormant</span>
+                                </div>
+                                <div class="progress-bar-track">
+                                    <div class="progress-bar-fill" style="width: 10%; background: linear-gradient(90deg, #6B7280, #9CA3AF);"></div>
+                                </div>
+                                <div class="progress-value">289</div>
+                                <div class="progress-meta">Intent: 31</div>
+                            </div>
+
+                            <div class="progress-item">
+                                <div class="progress-label-group">
+                                    <div class="progress-indicator" style="background: #F59E0B; box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);"></div>
+                                    <span style="font-weight: 500;">Handed Off</span>
+                                </div>
+                                <div class="progress-bar-track">
+                                    <div class="progress-bar-fill" style="width: 3%; background: linear-gradient(90deg, #F59E0B, #FBBF24);"></div>
+                                </div>
+                                <div class="progress-value">87</div>
+                                <div class="progress-meta">Intent: 78</div>
+                            </div>
+                        </div>
+
+                        <div style="position: relative; height: 200px; margin-top: 1.5rem;">
+                            <canvas id="pipelineChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Follow-Up Cadence -->
+                    <div class="premium-card wide-card animate-in animate-delay-3">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem;">
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <h2 style="font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em;">Follow-Up Cadence</h2>
+                                <div class="info-trigger">
+                                    i
+                                    <div class="info-popup">Distribution of active conversations by follow_up_attempt showing progression through your 6-attempt nurture sequence.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 1rem;">
+                            <div style="text-align: center;">
+                                <div style="font-size: 2rem; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums;">847</div>
+                                <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-top: 0.25rem;">Attempt 1</div>
+                                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">Day 0</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 2rem; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums;">623</div>
+                                <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-top: 0.25rem;">Attempt 2</div>
+                                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">Day 2</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 2rem; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums;">412</div>
+                                <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-top: 0.25rem;">Attempt 3</div>
+                                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">Day 5</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 2rem; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums;">287</div>
+                                <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-top: 0.25rem;">Attempt 4</div>
+                                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">Day 10</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 2rem; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums;">156</div>
+                                <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-top: 0.25rem;">Attempt 5</div>
+                                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">Day 18</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 2rem; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums;">89</div>
+                                <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-top: 0.25rem;">Attempt 6</div>
+                                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">Day 27</div>
+                            </div>
+                        </div>
+
+                        <div style="position: relative; height: 100px; margin-top: 2rem;">
+                            <canvas id="cadenceChart"></canvas>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Channel Performance -->
+                <div class="bento-grid">
+                    <div class="premium-card full-card animate-in animate-delay-4">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem;">
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <h2 style="font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em;">Channel Performance</h2>
+                                <div class="info-trigger">
+                                    i
+                                    <div class="info-popup">Message volume and delivery metrics by channel from messages table with delivery_status aggregations.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                            <!-- SMS -->
+                            <div style="padding: 2rem; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.1); border-radius: 1rem;">
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem;">
+                                    <h3 style="font-size: 1.125rem; font-weight: 600;">SMS</h3>
+                                    <span style="font-size: 0.75rem; padding: 0.375rem 0.75rem; background: rgba(16, 185, 129, 0.1); color: #10B981; border-radius: 0.5rem; font-weight: 600;">PRIMARY</span>
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem;">
+                                    <div>
+                                        <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">Total Messages</div>
+                                        <div style="font-size: 2rem; font-weight: 800; font-variant-numeric: tabular-nums;">2,341</div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">Delivery Rate</div>
+                                        <div style="font-size: 2rem; font-weight: 800; color: #10B981; font-variant-numeric: tabular-nums;">98.7%</div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">Conversations</div>
+                                        <div style="font-size: 2rem; font-weight: 800; font-variant-numeric: tabular-nums;">1,543</div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">Avg Length</div>
+                                        <div style="font-size: 2rem; font-weight: 800; font-variant-numeric: tabular-nums;">248</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Email -->
+                            <div style="padding: 2rem; background: rgba(255, 127, 48, 0.05); border: 1px solid rgba(255, 127, 48, 0.1); border-radius: 1rem;">
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem;">
+                                    <h3 style="font-size: 1.125rem; font-weight: 600;">Email</h3>
+                                    <span style="font-size: 0.75rem; padding: 0.375rem 0.75rem; background: rgba(255, 127, 48, 0.1); color: var(--agnt-orange); border-radius: 0.5rem; font-weight: 600;">SECONDARY</span>
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem;">
+                                    <div>
+                                        <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">Total Messages</div>
+                                        <div style="font-size: 2rem; font-weight: 800; font-variant-numeric: tabular-nums;">1,876</div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">Delivery Rate</div>
+                                        <div style="font-size: 2rem; font-weight: 800; color: var(--agnt-orange); font-variant-numeric: tabular-nums;">94.2%</div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">Conversations</div>
+                                        <div style="font-size: 2rem; font-weight: 800; font-variant-numeric: tabular-nums;">1,209</div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">Avg Length</div>
+                                        <div style="font-size: 2rem; font-weight: 800; font-variant-numeric: tabular-nums;">1,247</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+
+        <!-- Conversation Detail View -->
+        <div id="conversationDetailView" class="view">
+            <section style="padding: 3rem 3rem 2rem;">
+                <div style="max-width: 1600px; margin: 0 auto;">
+                    <button onclick="backToConversations()" style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-secondary); font-size: 0.875rem; background: none; border: none; cursor: pointer; margin-bottom: 1.5rem;">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor">
+                            <path d="M10 12L6 8L10 4" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                        Back to Conversations
+                    </button>
+                    <div id="conversationDetailContent"></div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Conversations View -->
+        <div id="conversationsView" class="view">
+            <section style="padding: 3rem 3rem 2rem;">
+                <div style="max-width: 1600px; margin: 0 auto;">
+                    <h1 class="hero-text">
+                        Active <span class="hero-accent">Conversations</span>
+                    </h1>
+                    <p style="font-size: 1.125rem; color: var(--text-secondary); margin-top: 1rem; max-width: 600px;">
+                        Real-time view of all ongoing lead conversations
+                    </p>
+                </div>
+            </section>
+
+            <main style="padding: 0 3rem 3rem; max-width: 1600px; margin: 0 auto;">
+                
+                <!-- Quick Stats -->
+                <div class="bento-grid" style="margin-bottom: 1rem;">
+                    <div class="premium-card" style="grid-column: span 3;">
+                        <div class="stat-label">Active Now</div>
+                        <div style="font-size: 3rem; font-weight: 800; color: var(--agnt-orange); font-variant-numeric: tabular-nums;">1,924</div>
+                    </div>
+                    <div class="premium-card" style="grid-column: span 3;">
+                        <div class="stat-label">Awaiting Reply</div>
+                        <div style="font-size: 3rem; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums;">847</div>
+                    </div>
+                    <div class="premium-card" style="grid-column: span 3;">
+                        <div class="stat-label">High Intent (70+)</div>
+                        <div style="font-size: 3rem; font-weight: 800; color: #10B981; font-variant-numeric: tabular-nums;">412</div>
+                    </div>
+                    <div class="premium-card" style="grid-column: span 3;">
+                        <div class="stat-label">New Today</div>
+                        <div style="font-size: 3rem; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums;">89</div>
+                    </div>
+                </div>
+
+                <!-- Conversations Table -->
+                <div class="premium-card" style="grid-column: span 12;">
+                    <div style="display: flex; align-items: center; justify-between; margin-bottom: 2rem;">
+                        <h2 style="font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em;">All Conversations</h2>
+                        <div style="display: flex; gap: 1rem;">
+                            <input type="search" placeholder="Search by name, email, phone..." style="padding: 0.5rem 1rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 0.5rem; color: var(--text-primary); font-size: 0.875rem; width: 300px;">
+                            <select style="padding: 0.5rem 1rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 0.5rem; color: var(--text-primary); font-size: 0.875rem;">
+                                <option>All Status</option>
+                                <option>Active</option>
+                                <option>Awaiting Reply</option>
+                                <option>High Intent</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <table class="conversations-table">
+                        <thead>
+                            <tr>
+                                <th>Lead</th>
+                                <th>Location</th>
+                                <th>Status</th>
+                                <th>Channel</th>
+                                <th>Intent</th>
+                                <th>Attempt</th>
+                                <th>Last Activity</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="clickable" onclick="viewConversation('sarah-johnson')" style="position: relative;">
+                                <td>
+                                    <div class="table-primary">Sarah Johnson 
+                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="var(--agnt-orange)" style="display: inline-block; margin-left: 0.5rem; vertical-align: middle;">
+                                            <path d="M5 2l5 5-5 5" stroke-width="1.5" stroke-linecap="round"/>
+                                        </svg>
+                                    </div>
+                                    <div class="table-secondary"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="b3c0d2c1d2db9dd9f3d6ded2dadf9dd0dcde">[email&#160;protected]</a></div>
+                                </td>
+                                <td>
+                                    <div class="table-primary">Dallas North</div>
+                                    <div class="table-secondary">Dallas, TX</div>
+                                </td>
+                                <td>
+                                    <span class="status-badge status-active">Active</span>
+                                </td>
+                                <td>
+                                    <span class="channel-badge channel-sms">SMS</span>
+                                </td>
+                                <td>
+                                    <div style="font-weight: 600; font-variant-numeric: tabular-nums;">72</div>
+                                </td>
+                                <td>
+                                    <div style="font-variant-numeric: tabular-nums;">2</div>
+                                </td>
+                                <td>
+                                    <div class="table-secondary">2 min ago</div>
+                                </td>
+                            </tr>
+                            <tr class="clickable" onclick="viewConversation('mike-chen')" style="position: relative;">
+                                <td>
+                                    <div class="table-primary">Mike Chen
+                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="var(--agnt-orange)" style="display: inline-block; margin-left: 0.5rem; vertical-align: middle;">
+                                            <path d="M5 2l5 5-5 5" stroke-width="1.5" stroke-linecap="round"/>
+                                        </svg>
+                                    </div>
+                                    <div class="table-secondary"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="24494d4f410a474c414a644149454d480a474b49">[email&#160;protected]</a></div>
+                                </td>
+                                <td>
+                                    <div class="table-primary">Phoenix Scottsdale</div>
+                                    <div class="table-secondary">Phoenix, AZ</div>
+                                </td>
+                                <td>
+                                    <span class="status-badge status-active">Active</span>
+                                </td>
+                                <td>
+                                    <span class="channel-badge channel-email">Email</span>
+                                </td>
+                                <td>
+                                    <div style="font-weight: 600; font-variant-numeric: tabular-nums;">68</div>
+                                </td>
+                                <td>
+                                    <div style="font-variant-numeric: tabular-nums;">1</div>
+                                </td>
+                                <td>
+                                    <div class="table-secondary">5 min ago</div>
+                                </td>
+                            </tr>
+                            <tr class="clickable" onclick="viewConversation('jennifer-lopez')" style="position: relative;">
+                                <td>
+                                    <div class="table-primary">Jennifer Lopez
+                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="var(--agnt-orange)" style="display: inline-block; margin-left: 0.5rem; vertical-align: middle;">
+                                            <path d="M5 2l5 5-5 5" stroke-width="1.5" stroke-linecap="round"/>
+                                        </svg>
+                                    </div>
+                                    <div class="table-secondary"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="3e5452514e5b447e5b535f5752105d5153">[email&#160;protected]</a></div>
+                                </td>
+                                <td>
+                                    <div class="table-primary">Austin Downtown</div>
+                                    <div class="table-secondary">Austin, TX</div>
+                                </td>
+                                <td>
+                                    <span class="status-badge status-active">Active</span>
+                                </td>
+                                <td>
+                                    <span class="channel-badge channel-sms">SMS</span>
+                                </td>
+                                <td>
+                                    <div style="font-weight: 600; font-variant-numeric: tabular-nums;">81</div>
+                                </td>
+                                <td>
+                                    <div style="font-variant-numeric: tabular-nums;">3</div>
+                                </td>
+                                <td>
+                                    <div class="table-secondary">8 min ago</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="table-primary">David Park</div>
+                                    <div class="table-secondary"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="f09491869994de80b0959d91999cde939f9d">[email&#160;protected]</a></div>
+                                </td>
+                                <td>
+                                    <div class="table-primary">Denver Tech Center</div>
+                                    <div class="table-secondary">Denver, CO</div>
+                                </td>
+                                <td>
+                                    <span class="status-badge status-completed">Completed</span>
+                                </td>
+                                <td>
+                                    <span class="channel-badge channel-email">Email</span>
+                                </td>
+                                <td>
+                                    <div style="font-weight: 600; font-variant-numeric: tabular-nums;">89</div>
+                                </td>
+                                <td>
+                                    <div style="font-variant-numeric: tabular-nums;">4</div>
+                                </td>
+                                <td>
+                                    <div class="table-secondary">12 min ago</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="table-primary">Emma Wilson</div>
+                                    <div class="table-secondary"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="11747c7c703f6651747c70787d3f727e7c">[email&#160;protected]</a></div>
+                                </td>
+                                <td>
+                                    <div class="table-primary">San Diego UTC</div>
+                                    <div class="table-secondary">San Diego, CA</div>
+                                </td>
+                                <td>
+                                    <span class="status-badge status-active">Active</span>
+                                </td>
+                                <td>
+                                    <span class="channel-badge channel-sms">SMS</span>
+                                </td>
+                                <td>
+                                    <div style="font-weight: 600; font-variant-numeric: tabular-nums;">64</div>
+                                </td>
+                                <td>
+                                    <div style="font-variant-numeric: tabular-nums;">1</div>
+                                </td>
+                                <td>
+                                    <div class="table-secondary">15 min ago</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="table-primary">Alex Martinez</div>
+                                    <div class="table-secondary"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="bfded3dac791d2ffdad2ded6d391dcd0d2">[email&#160;protected]</a></div>
+                                </td>
+                                <td>
+                                    <div class="table-primary">Houston Galleria</div>
+                                    <div class="table-secondary">Houston, TX</div>
+                                </td>
+                                <td>
+                                    <span class="status-badge status-active">Active</span>
+                                </td>
+                                <td>
+                                    <span class="channel-badge channel-email">Email</span>
+                                </td>
+                                <td>
+                                    <div style="font-weight: 600; font-variant-numeric: tabular-nums;">76</div>
+                                </td>
+                                <td>
+                                    <div style="font-variant-numeric: tabular-nums;">2</div>
+                                </td>
+                                <td>
+                                    <div class="table-secondary">18 min ago</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="table-primary">Taylor Kim</div>
+                                    <div class="table-secondary"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="dda9bca4b1b2aff3b69db8b0bcb4b1f3beb2b0">[email&#160;protected]</a></div>
+                                </td>
+                                <td>
+                                    <div class="table-primary">Seattle Bellevue</div>
+                                    <div class="table-secondary">Seattle, WA</div>
+                                </td>
+                                <td>
+                                    <span class="status-badge status-dormant">Dormant</span>
+                                </td>
+                                <td>
+                                    <span class="channel-badge channel-sms">SMS</span>
+                                </td>
+                                <td>
+                                    <div style="font-weight: 600; font-variant-numeric: tabular-nums;">31</div>
+                                </td>
+                                <td>
+                                    <div style="font-variant-numeric: tabular-nums;">6</div>
+                                </td>
+                                <td>
+                                    <div class="table-secondary">22 min ago</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="table-primary">Jordan Lee</div>
+                                    <div class="table-secondary"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="4c26233e282d2262200c29212d2520622f2321">[email&#160;protected]</a></div>
+                                </td>
+                                <td>
+                                    <div class="table-primary">Miami Beach</div>
+                                    <div class="table-secondary">Miami, FL</div>
+                                </td>
+                                <td>
+                                    <span class="status-badge status-active">Active</span>
+                                </td>
+                                <td>
+                                    <span class="channel-badge channel-sms">SMS</span>
+                                </td>
+                                <td>
+                                    <div style="font-weight: 600; font-variant-numeric: tabular-nums;">59</div>
+                                </td>
+                                <td>
+                                    <div style="font-variant-numeric: tabular-nums;">3</div>
+                                </td>
+                                <td>
+                                    <div class="table-secondary">25 min ago</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
+                        <div style="font-size: 0.875rem; color: var(--text-secondary);">
+                            Showing 8 of 1,924 conversations
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button style="padding: 0.5rem 1rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 0.5rem; color: var(--text-primary); font-size: 0.875rem; cursor: pointer;">Previous</button>
+                            <button style="padding: 0.5rem 1rem; background: var(--agnt-orange); border: 1px solid var(--agnt-orange); border-radius: 0.5rem; color: white; font-size: 0.875rem; cursor: pointer; font-weight: 600;">Next</button>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+
+        <!-- Analytics View -->
+        <div id="analyticsView" class="view">
+            <section style="padding: 3rem 3rem 2rem;">
+                <div style="max-width: 1600px; margin: 0 auto;">
+                    <h1 class="hero-text">
+                        Performance <span class="hero-accent">Analytics</span>
+                    </h1>
+                    <p style="font-size: 1.125rem; color: var(--text-secondary); margin-top: 1rem; max-width: 600px;">
+                        Deep insights into system performance and conversion metrics
+                    </p>
+                </div>
+            </section>
+
+            <main style="padding: 0 3rem 3rem; max-width: 1600px; margin: 0 auto;">
+                <!-- KPI Summary Cards -->
+                <div class="bento-grid" style="margin-bottom: 2rem;">
+                    <div class="premium-card" style="grid-column: span 3;">
+                        <div style="font-size: 0.75rem; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.75rem;">Total Leads Processed</div>
+                        <div style="font-size: 3rem; font-weight: 900; letter-spacing: -0.03em; background: linear-gradient(135deg, var(--agnt-orange), #FFA366); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">24,847</div>
+                        <div style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem;">↑ 18% from last month</div>
+                    </div>
+                    
+                    <div class="premium-card" style="grid-column: span 3;">
+                        <div style="font-size: 0.75rem; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.75rem;">Overall Conversion Rate</div>
+                        <div style="font-size: 3rem; font-weight: 900; letter-spacing: -0.03em; color: #10B981;">18.4%</div>
+                        <div style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem;">↑ 3.2% improvement</div>
+                    </div>
+                    
+                    <div class="premium-card" style="grid-column: span 3;">
+                        <div style="font-size: 0.75rem; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.75rem;">Avg Response Time</div>
+                        <div style="font-size: 3rem; font-weight: 900; letter-spacing: -0.03em;">1.8<span style="font-size: 1.5rem;">min</span></div>
+                        <div style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem;">↓ 45 seconds faster</div>
+                    </div>
+                    
+                    <div class="premium-card" style="grid-column: span 3;">
+                        <div style="font-size: 0.75rem; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.75rem;">Revenue Generated</div>
+                        <div style="font-size: 3rem; font-weight: 900; letter-spacing: -0.03em;">$487K</div>
+                        <div style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem;">↑ $112K this quarter</div>
+                    </div>
+                </div>
+
+                <!-- Charts Grid -->
+                <div class="bento-grid" style="margin-bottom: 2rem;">
+                    <!-- Conversion Funnel -->
+                    <div class="premium-card" style="grid-column: span 6;">
+                        <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 2rem;">Conversion Funnel</h3>
+                        <div style="height: 350px;">
+                            <canvas id="conversionFunnelChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Response Time Distribution -->
+                    <div class="premium-card" style="grid-column: span 6;">
+                        <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 2rem;">Response Time Distribution</h3>
+                        <div style="height: 350px;">
+                            <canvas id="responseTimeChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lead Source Analysis -->
+                <div class="premium-card" style="margin-bottom: 2rem;">
+                    <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 2rem;">Lead Source Performance</h3>
+                    <div style="height: 300px;">
+                        <canvas id="leadSourceChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Location Performance Comparison -->
+                <div class="premium-card" style="margin-bottom: 2rem;">
+                    <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 2rem;">Location Performance Comparison</h3>
+                    <div style="height: 400px;">
+                        <canvas id="locationPerformanceChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Detailed Metrics Table -->
+                <div class="premium-card">
+                    <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 2rem;">Location Metrics Breakdown</h3>
+                    <table class="conversations-table">
+                        <thead>
+                            <tr>
+                                <th>Location</th>
+                                <th>Leads</th>
+                                <th>Response Rate</th>
+                                <th>Avg Intent</th>
+                                <th>Tours Booked</th>
+                                <th>Conversions</th>
+                                <th>Revenue</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Dallas North</strong><br><span style="font-size: 0.875rem; color: var(--text-secondary);">Dallas, TX</span></td>
+                                <td>3,247</td>
+                                <td><span style="color: #10B981; font-weight: 600;">89%</span></td>
+                                <td>72</td>
+                                <td>187</td>
+                                <td><span style="color: var(--agnt-orange); font-weight: 600;">42</span></td>
+                                <td><strong>$84,000</strong></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Phoenix Scottsdale</strong><br><span style="font-size: 0.875rem; color: var(--text-secondary);">Phoenix, AZ</span></td>
+                                <td>2,891</td>
+                                <td><span style="color: #10B981; font-weight: 600;">82%</span></td>
+                                <td>68</td>
+                                <td>156</td>
+                                <td><span style="color: var(--agnt-orange); font-weight: 600;">38</span></td>
+                                <td><strong>$76,000</strong></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Austin Downtown</strong><br><span style="font-size: 0.875rem; color: var(--text-secondary);">Austin, TX</span></td>
+                                <td>3,156</td>
+                                <td><span style="color: #10B981; font-weight: 600;">91%</span></td>
+                                <td>81</td>
+                                <td>198</td>
+                                <td><span style="color: var(--agnt-orange); font-weight: 600;">47</span></td>
+                                <td><strong>$94,000</strong></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Denver Tech Center</strong><br><span style="font-size: 0.875rem; color: var(--text-secondary);">Denver, CO</span></td>
+                                <td>2,456</td>
+                                <td><span style="color: #FBBF24; font-weight: 600;">76%</span></td>
+                                <td>64</td>
+                                <td>142</td>
+                                <td><span style="color: var(--agnt-orange); font-weight: 600;">31</span></td>
+                                <td><strong>$62,000</strong></td>
+                            </tr>
+                            <tr>
+                                <td><strong>San Diego UTC</strong><br><span style="font-size: 0.875rem; color: var(--text-secondary);">San Diego, CA</span></td>
+                                <td>2,789</td>
+                                <td><span style="color: #10B981; font-weight: 600;">85%</span></td>
+                                <td>74</td>
+                                <td>167</td>
+                                <td><span style="color: var(--agnt-orange); font-weight: 600;">39</span></td>
+                                <td><strong>$78,000</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- AI Performance Metrics -->
+                <div class="premium-card" style="margin-top: 2rem;">
+                    <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 2rem;">AI System Performance</h3>
+                    <div class="bento-grid">
+                        <div style="grid-column: span 3; padding: 1.5rem; background: var(--surface-2); border-radius: 0.75rem;">
+                            <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">Context Accuracy</div>
+                            <div style="font-size: 2rem; font-weight: 800;">96.8%</div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);">Contextual relevance score</div>
+                        </div>
+                        <div style="grid-column: span 3; padding: 1.5rem; background: var(--surface-2); border-radius: 0.75rem;">
+                            <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">Intent Detection</div>
+                            <div style="font-size: 2rem; font-weight: 800;">92.4%</div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);">Correct intent classification</div>
+                        </div>
+                        <div style="grid-column: span 3; padding: 1.5rem; background: var(--surface-2); border-radius: 0.75rem;">
+                            <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">Sentiment Analysis</div>
+                            <div style="font-size: 2rem; font-weight: 800;">8.7/10</div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);">Average sentiment score</div>
+                        </div>
+                        <div style="grid-column: span 3; padding: 1.5rem; background: var(--surface-2); border-radius: 0.75rem;">
+                            <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">Handoff Rate</div>
+                            <div style="font-size: 2rem; font-weight: 800;">3.2%</div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);">Human intervention needed</div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+    </div>
+
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+        // Theme toggle
+        function toggleTheme() {
+            const body = document.body;
+            const toggle = document.querySelector('.theme-toggle');
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            body.setAttribute('data-theme', newTheme);
+            toggle.classList.toggle('active');
+            
+            // Update charts with new colors
+            updateChartColors();
+        }
+
+        // Location dropdown
+        function toggleLocationDropdown() {
+            const dropdown = document.getElementById('locationDropdown');
+            dropdown.classList.toggle('active');
+        }
+
+        function selectLocation(id, name) {
+            document.getElementById('selectedLocation').textContent = name;
+            
+            // Update selected state
+            document.querySelectorAll('.location-dropdown-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+            
+            // Close dropdown
+            toggleLocationDropdown();
+            
+            // Here you would filter the data based on location
+            console.log('Selected location:', id, name);
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdown = document.querySelector('.location-dropdown');
+            if (dropdown && !dropdown.contains(event.target)) {
+                document.getElementById('locationDropdown').classList.remove('active');
+            }
+        });
+
+        // View switching
+        function switchView(viewName) {
+            // Hide all views
+            document.querySelectorAll('.view').forEach(view => {
+                view.classList.remove('active');
+            });
+            
+            // Show selected view
+            document.getElementById(viewName + 'View').classList.add('active');
+            
+            // Update nav active state
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Initialize analytics charts when switching to analytics view
+            if (viewName === 'analytics') {
+                setTimeout(() => {
+                    initAnalyticsCharts();
+                }, 100);
+            }
+        }
+        
+        // Initialize Analytics Charts
+        function initAnalyticsCharts() {
+            // Conversion Funnel Chart
+            const conversionCtx = document.getElementById('conversionFunnelChart');
+            if (conversionCtx && !conversionCtx.chartInstance) {
+                conversionCtx.chartInstance = new Chart(conversionCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['New Leads', 'Responded', 'Qualified', 'Tour Scheduled', 'Converted'],
+                        datasets: [{
+                            label: 'Conversion Funnel',
+                            data: [2847, 2341, 1876, 547, 287],
+                            backgroundColor: [
+                                'rgba(255, 127, 48, 1)',
+                                'rgba(255, 127, 48, 0.8)',
+                                'rgba(255, 127, 48, 0.6)',
+                                'rgba(255, 127, 48, 0.4)',
+                                'rgba(16, 185, 129, 0.8)'
+                            ],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: getThemeColors().border },
+                                ticks: { color: getThemeColors().text }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: getThemeColors().text }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Response Time Distribution
+            const responseTimeCtx = document.getElementById('responseTimeChart');
+            if (responseTimeCtx && !responseTimeCtx.chartInstance) {
+                responseTimeCtx.chartInstance = new Chart(responseTimeCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['< 1 min', '1-5 min', '5-15 min', '15-30 min', '> 30 min'],
+                        datasets: [{
+                            data: [1247, 623, 412, 287, 89],
+                            backgroundColor: [
+                                'rgba(16, 185, 129, 0.8)',
+                                'rgba(255, 127, 48, 0.8)',
+                                'rgba(251, 191, 36, 0.8)',
+                                'rgba(239, 68, 68, 0.8)',
+                                'rgba(107, 114, 128, 0.8)'
+                            ],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: { color: getThemeColors().text }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Lead Source Performance
+            const leadSourceCtx = document.getElementById('leadSourceChart');
+            if (leadSourceCtx && !leadSourceCtx.chartInstance) {
+                leadSourceCtx.chartInstance = new Chart(leadSourceCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Website', 'Google Ads', 'Facebook', 'Instagram', 'Referral', 'Walk-in'],
+                        datasets: [{
+                            label: 'Leads',
+                            data: [847, 623, 512, 487, 287, 91],
+                            backgroundColor: 'rgba(255, 127, 48, 0.6)',
+                            borderColor: '#FF7F30',
+                            borderWidth: 1
+                        }, {
+                            label: 'Conversions',
+                            data: [156, 98, 87, 76, 62, 8],
+                            backgroundColor: 'rgba(16, 185, 129, 0.6)',
+                            borderColor: '#10B981',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: { color: getThemeColors().text }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: getThemeColors().border },
+                                ticks: { color: getThemeColors().text }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: getThemeColors().text }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Location Performance Comparison
+            const locationPerfCtx = document.getElementById('locationPerformanceChart');
+            if (locationPerfCtx && !locationPerfCtx.chartInstance) {
+                locationPerfCtx.chartInstance = new Chart(locationPerfCtx, {
+                    type: 'radar',
+                    data: {
+                        labels: ['Lead Volume', 'Response Rate', 'Conversion Rate', 'Avg Intent Score', 'Tour Bookings', 'Revenue'],
+                        datasets: [{
+                            label: 'Dallas North',
+                            data: [92, 89, 78, 72, 85, 94],
+                            borderColor: '#FF7F30',
+                            backgroundColor: 'rgba(255, 127, 48, 0.2)',
+                            pointBackgroundColor: '#FF7F30'
+                        }, {
+                            label: 'Phoenix Scottsdale',
+                            data: [78, 82, 68, 68, 72, 76],
+                            borderColor: '#10B981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                            pointBackgroundColor: '#10B981'
+                        }, {
+                            label: 'Austin Downtown',
+                            data: [85, 91, 81, 81, 89, 87],
+                            borderColor: '#3B82F6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                            pointBackgroundColor: '#3B82F6'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { color: getThemeColors().text }
+                            }
+                        },
+                        scales: {
+                            r: {
+                                beginAtZero: true,
+                                max: 100,
+                                grid: { color: getThemeColors().border },
+                                angleLines: { color: getThemeColors().border },
+                                pointLabels: { color: getThemeColors().text }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Get theme-aware colors
+        function getThemeColors() {
+            const theme = document.body.getAttribute('data-theme');
+            return {
+                text: theme === 'dark' ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)',
+                grid: theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+                tooltip: theme === 'dark' ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.95)'
+            };
+        }
+
+        // Pipeline Chart
+        let pipelineChart;
+        function initPipelineChart() {
+            const ctx = document.getElementById('pipelineChart');
+            if (!ctx) return;
+            
+            const colors = getThemeColors();
+            pipelineChart = new Chart(ctx.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Active',
+                        data: [1842, 1867, 1891, 1903, 1918, 1921, 1924],
+                        borderColor: '#FF7F30',
+                        backgroundColor: 'transparent',
+                        tension: 0.4,
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        pointBackgroundColor: '#FF7F30',
+                        pointBorderColor: colors.tooltip,
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(255, 127, 48, 0.95)',
+                            titleColor: '#FFFFFF',
+                            bodyColor: '#FFFFFF',
+                            borderColor: 'rgba(255, 127, 48, 0.3)',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: false
+                        }
+                    },
+                    scales: {
+                        y: { display: false },
+                        x: {
+                            display: true,
+                            grid: { display: false },
+                            ticks: {
+                                color: colors.text,
+                                font: { size: 11 }
+                            },
+                            border: { display: false }
+                        }
+                    },
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                }
+            });
+        }
+
+        // Cadence Chart
+        let cadenceChart;
+        function initCadenceChart() {
+            const ctx = document.getElementById('cadenceChart');
+            if (!ctx) return;
+            
+            cadenceChart = new Chart(ctx.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: ['1', '2', '3', '4', '5', '6'],
+                    datasets: [{
+                        data: [847, 623, 412, 287, 156, 89],
+                        backgroundColor: 'rgba(255, 127, 48, 0.3)',
+                        borderColor: '#FF7F30',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                    scales: { y: { display: false }, x: { display: false } }
+                }
+            });
+        }
+
+        function updateChartColors() {
+            const colors = getThemeColors();
+            
+            if (pipelineChart) {
+                pipelineChart.options.scales.x.ticks.color = colors.text;
+                pipelineChart.options.scales.x.grid.color = colors.grid;
+                pipelineChart.update();
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initPipelineChart();
+            initCadenceChart();
+        });
+
+        // Conversation data - based on actual Supabase schema
+        const conversationData = {
+            'sarah-johnson': {
+                // From leads table
+                lead: {
+                    name: 'Sarah Johnson',
+                    email: 'sarah.j@email.com',
+                    phone: '+1 (214) 555-0147',
+                    profession: 'Hair Stylist',
+                    lead_source: 'Website Form',
+                    created_at: '2024-11-15T14:23:00Z'
+                },
+                // From locations table
+                location: {
+                    name: 'Dallas North',
+                    city: 'Dallas',
+                    state: 'TX',
+                    street_address: '4255 Belt Line Rd',
+                    zip_code: '75001',
+                    scheduling_link: 'https://calendly.com/image-studios-dallas',
+                    manager_name: 'Jennifer Martinez'
+                },
+                // From conversations table
+                conversation: {
+                    id: 'conv_001',
+                    status: 'active',
+                    stage: 'interest',
+                    primary_channel: 'sms',
+                    intent_score: 72,
+                    follow_up_attempt: 2,
+                    started_at: '2024-11-15T14:25:00Z',
+                    last_activity: '2024-11-23T16:48:00Z',
+                    awaiting_reply: false,
+                    next_follow_up_at: '2024-11-24T10:00:00Z',
+                    goal_progress: {
+                        milestones: [
+                            { type: 'conversation_started', timestamp: '2024-11-15T14:25:00Z' },
+                            { type: 'interest_expressed', timestamp: '2024-11-15T15:10:00Z' },
+                            { type: 'questions_asked', timestamp: '2024-11-18T11:30:00Z' }
+                        ]
+                    }
+                },
+                // From messages table
+                messages: [
+                    {
+                        direction: 'outbound',
+                        channel: 'sms',
+                        content: "Hi Sarah! 👋 Thanks for your interest in IMAGE Studios Dallas North. I'm excited to help you explore our luxury salon suites! We offer private, fully-equipped studios perfect for hair stylists like yourself. When would be a good time for a quick tour?",
+                        sent_at: '2024-11-15T14:25:00Z',
+                        delivery_status: 'delivered'
+                    },
+                    {
+                        direction: 'inbound',
+                        channel: 'sms',
+                        content: "Hi! Yes I'm really interested. I've been looking for my own space. What are the suite sizes and monthly costs?",
+                        sent_at: '2024-11-15T15:10:00Z',
+                        delivery_status: 'delivered'
+                    },
+                    {
+                        direction: 'outbound',
+                        channel: 'sms',
+                        content: "Great question! Our suites range from 100-200 sq ft and run $400-$800/month depending on size and location within the building. Each suite comes fully equipped with salon chair, mirrors, storage, and all utilities included. Would you like to see some available options?",
+                        sent_at: '2024-11-15T15:15:00Z',
+                        delivery_status: 'delivered'
+                    },
+                    {
+                        direction: 'inbound',
+                        channel: 'sms',
+                        content: "That sounds perfect for my budget! What's included in the lease?",
+                        sent_at: '2024-11-18T11:30:00Z',
+                        delivery_status: 'delivered'
+                    },
+                    {
+                        direction: 'outbound',
+                        channel: 'sms',
+                        content: "You'll love this - everything's included! 24/7 access, WiFi, utilities, HD security cameras, break room with coffee bar, and a beautiful reception area for your clients. Plus marketing support and a private bathroom in each suite. Can I schedule your tour for this week?",
+                        sent_at: '2024-11-18T11:35:00Z',
+                        delivery_status: 'delivered'
+                    },
+                    {
+                        direction: 'inbound',
+                        channel: 'sms',
+                        content: "This week works! I'm free Thursday or Friday afternoon",
+                        sent_at: '2024-11-23T16:48:00Z',
+                        delivery_status: 'delivered'
+                    }
+                ],
+                // From ai_context JSONB
+                ai_insights: {
+                    topics_discussed: ['suite sizes', 'pricing', 'amenities', 'lease terms'],
+                    objections_raised: [],
+                    interests: ['private workspace', 'professional environment', 'client reception'],
+                    sentiment: 'very positive',
+                    next_action: 'schedule_tour'
+                }
+            },
+            'mike-chen': {
+                lead: {
+                    name: 'Mike Chen',
+                    email: 'mike.chen@email.com',
+                    phone: '+1 (480) 555-0892',
+                    profession: 'Barber',
+                    lead_source: 'Instagram Ad',
+                    created_at: '2024-11-22T09:15:00Z'
+                },
+                location: {
+                    name: 'Phoenix Scottsdale',
+                    city: 'Phoenix',
+                    state: 'AZ',
+                    street_address: '7014 E Camelback Rd',
+                    zip_code: '85251',
+                    scheduling_link: 'https://calendly.com/image-studios-scottsdale',
+                    manager_name: 'David Rodriguez'
+                },
+                conversation: {
+                    id: 'conv_002',
+                    status: 'active',
+                    stage: 'discovery',
+                    primary_channel: 'email',
+                    intent_score: 68,
+                    follow_up_attempt: 1,
+                    started_at: '2024-11-22T09:20:00Z',
+                    last_activity: '2024-11-23T16:43:00Z',
+                    awaiting_reply: true,
+                    next_follow_up_at: '2024-11-25T09:00:00Z',
+                    goal_progress: {
+                        milestones: [
+                            { type: 'conversation_started', timestamp: '2024-11-22T09:20:00Z' }
+                        ]
+                    }
+                },
+                messages: [
+                    {
+                        direction: 'outbound',
+                        channel: 'email',
+                        content: "Hi Mike,\n\nThank you for reaching out about IMAGE Studios in Scottsdale! I'm thrilled to connect with you.\n\nAs a barber, you'll appreciate our modern, fully-equipped suites that give you complete control over your business while we handle the overhead. Each suite features:\n\n• Private, lockable space (100-200 sq ft)\n• Professional barber chair and hydraulics\n• Full-length mirrors and LED lighting\n• Ample storage for your tools and products\n• High-end flooring and designer finishes\n\nOur Scottsdale location is in a prime area with excellent visibility and parking. Would you be available for a quick 15-minute tour this week?\n\nBest regards,\nIMAGE Studios Scottsdale",
+                        sent_at: '2024-11-22T09:20:00Z',
+                        delivery_status: 'delivered'
+                    },
+                    {
+                        direction: 'inbound',
+                        channel: 'email',
+                        content: "Hi,\n\nThanks for the info. I'm currently renting a chair at another shop. What makes IMAGE Studios different? Also curious about the monthly cost.\n\nThanks,\nMike",
+                        sent_at: '2024-11-22T14:35:00Z',
+                        delivery_status: 'delivered'
+                    },
+                    {
+                        direction: 'outbound',
+                        channel: 'email',
+                        content: "Great question, Mike!\n\nThe biggest difference is YOU own your business. With traditional chair rental, you're still subject to shop rules, hours, and often can't build true equity. At IMAGE Studios:\n\n✓ You set your own hours (24/7 access)\n✓ You keep 100% of your earnings\n✓ You control your prices and services\n✓ You build YOUR brand, not someone else's\n✓ Private suite = better client experience\n\nOur suites run $450-$750/month (all-inclusive - no hidden fees). Most barbers see ROI within the first month because you're keeping all your revenue.\n\nMany of our current suite holders came from traditional chair rental and wish they'd made the switch sooner. Want to hear their stories during a tour?\n\nBest,\nIMAGE Studios Team",
+                        sent_at: '2024-11-22T15:00:00Z',
+                        delivery_status: 'delivered'
+                    },
+                    {
+                        direction: 'inbound',
+                        channel: 'email',
+                        content: "That's interesting. I do want more control over my schedule. Let me think about it and I'll get back to you.",
+                        sent_at: '2024-11-23T16:43:00Z',
+                        delivery_status: 'delivered'
+                    }
+                ],
+                ai_insights: {
+                    topics_discussed: ['business ownership', 'pricing comparison', 'schedule flexibility'],
+                    objections_raised: ['cost concerns', 'comparing to current situation'],
+                    interests: ['independence', 'schedule control', 'revenue retention'],
+                    sentiment: 'interested but cautious',
+                    next_action: 'follow_up_with_social_proof'
+                }
+            },
+            'jennifer-lopez': {
+                lead: {
+                    name: 'Jennifer Lopez',
+                    email: 'jlopez@email.com',
+                    phone: '+1 (512) 555-0234',
+                    profession: 'Esthetician',
+                    lead_source: 'Google Search',
+                    created_at: '2024-11-20T10:42:00Z'
+                },
+                location: {
+                    name: 'Austin Downtown',
+                    city: 'Austin',
+                    state: 'TX',
+                    street_address: '1011 San Jacinto Blvd',
+                    zip_code: '78701',
+                    scheduling_link: 'https://calendly.com/image-studios-austin',
+                    manager_name: 'Maria Garcia'
+                },
+                conversation: {
+                    id: 'conv_003',
+                    status: 'active',
+                    stage: 'scheduling',
+                    primary_channel: 'sms',
+                    intent_score: 81,
+                    follow_up_attempt: 3,
+                    started_at: '2024-11-20T10:45:00Z',
+                    last_activity: '2024-11-23T16:40:00Z',
+                    awaiting_reply: false,
+                    next_follow_up_at: null,
+                    goal_progress: {
+                        milestones: [
+                            { type: 'conversation_started', timestamp: '2024-11-20T10:45:00Z' },
+                            { type: 'interest_expressed', timestamp: '2024-11-20T11:20:00Z' },
+                            { type: 'pricing_discussed', timestamp: '2024-11-21T09:15:00Z' },
+                            { type: 'tour_requested', timestamp: '2024-11-23T16:40:00Z' }
+                        ]
+                    }
+                },
+                messages: [
+                    {
+                        direction: 'outbound',
+                        channel: 'sms',
+                        content: "Hi Jennifer! Thanks for inquiring about IMAGE Studios Austin Downtown. We'd love to show you our luxury salon suites perfect for estheticians! Our downtown location puts you in the heart of Austin with amazing foot traffic. When can we schedule your tour?",
+                        sent_at: '2024-11-20T10:45:00Z',
+                        delivery_status: 'delivered'
+                    },
+                    {
+                        direction: 'inbound',
+                        channel: 'sms',
+                        content: "Hi! I'm definitely interested. Do you have suites with treatment beds for facials and waxing?",
+                        sent_at: '2024-11-20T11:20:00Z',
+                        delivery_status: 'delivered'
+                    },
+                    {
+                        direction: 'outbound',
+                        channel: 'sms',
+                        content: "Absolutely! Our suites are fully customizable for esthetician services. Many of our suite holders have treatment beds, skincare fridges, and specialized lighting. Each suite has its own sink, storage, and you can bring in any equipment you need. Want to see some photos of our current esthetician setups?",
+                        sent_at: '2024-11-20T11:25:00Z',
+                        delivery_status: 'delivered'
+                    },
+                    {
+                        direction: 'inbound',
+                        channel: 'sms',
+                        content: "Yes please! Also what's the pricing range?",
+                        sent_at: '2024-11-21T09:15:00Z',
+                        delivery_status: 'delivered'
+                    },
+                    {
+                        direction: 'outbound',
+                        channel: 'sms',
+                        content: "I'll text you some suite photos! Our downtown suites run $500-$850/month depending on size. Everything's included - utilities, WiFi, marketing support, and premium amenities. The ROI is incredible when you consider you keep 100% of your revenue. Here's our calendar link: https://calendly.com/image-studios-austin",
+                        sent_at: '2024-11-21T09:20:00Z',
+                        delivery_status: 'delivered'
+                    },
+                    {
+                        direction: 'inbound',
+                        channel: 'sms',
+                        content: "Perfect! Let me look at my schedule and I'll book a time to tour. This looks really promising!",
+                        sent_at: '2024-11-21T14:30:00Z',
+                        delivery_status: 'delivered'
+                    },
+                    {
+                        direction: 'outbound',
+                        channel: 'sms',
+                        content: "Wonderful! Maria, our location manager, gives amazing tours and can answer all your questions about customizing your suite. Just pick any time that works for you this week. Looking forward to meeting you!",
+                        sent_at: '2024-11-21T14:35:00Z',
+                        delivery_status: 'delivered'
+                    },
+                    {
+                        direction: 'inbound',
+                        channel: 'sms',
+                        content: "Just booked for Thursday at 2pm! See you then!",
+                        sent_at: '2024-11-23T16:40:00Z',
+                        delivery_status: 'delivered'
+                    }
+                ],
+                ai_insights: {
+                    topics_discussed: ['suite customization', 'esthetician equipment', 'pricing', 'location benefits', 'tour scheduling'],
+                    objections_raised: [],
+                    interests: ['downtown location', 'professional setup', 'business independence', 'revenue potential'],
+                    sentiment: 'highly engaged',
+                    next_action: 'tour_confirmed'
+                }
+            }
+        };
+
+        // View conversation detail
+        window.viewConversation = function(leadId) {
+            console.log('viewConversation called with:', leadId);
+            const data = conversationData[leadId];
+            if (!data) {
+                console.error('No data found for:', leadId);
+                return;
+            }
+
+            console.log('Found data:', data);
+            const detailView = document.getElementById('conversationDetailView');
+            const content = document.getElementById('conversationDetailContent');
+
+            if (!detailView || !content) {
+                console.error('Missing DOM elements');
+                return;
+            }
+
+            // Build the detail HTML
+            const detailHtml = `
+                <!-- Header -->
+                <div style="display: flex; align-items: start; justify-content: space-between; margin-bottom: 2rem;">
+                    <div>
+                        <h1 style="font-size: 2.5rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 0.5rem;">${data.lead.name}</h1>
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <span class="status-badge status-${data.conversation.status}">${data.conversation.status.charAt(0).toUpperCase() + data.conversation.status.slice(1)}</span>
+                            <span class="channel-badge channel-${data.conversation.primary_channel}">${data.conversation.primary_channel.toUpperCase()}</span>
+                            <span style="font-size: 0.875rem; color: var(--text-secondary);">Stage: ${data.conversation.stage}</span>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 0.75rem; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem;">Intent Score</div>
+                        <div style="font-size: 3rem; font-weight: 900; background: linear-gradient(135deg, var(--agnt-orange), #FFA366); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${data.conversation.intent_score}</div>
+                    </div>
+                </div>
+
+                <!-- Grid Layout -->
+                <div style="display: grid; grid-template-columns: 350px 1fr; gap: 2rem;">
+                    
+                    <!-- Left Sidebar -->
+                    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                        
+                        <!-- Lead Profile -->
+                        <div class="premium-card">
+                            <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 1.5rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-tertiary);">Lead Profile</h3>
+                            
+                            <div class="profile-field">
+                                <div class="profile-icon">
+                                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="var(--agnt-orange)" stroke-width="1.5">
+                                        <path d="M15 15.5v-1.5a3 3 0 0 0-3-3H6a3 3 0 0 0-3 3v1.5M9 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"></path>
+                                    </svg>
+                                </div>
+                                <div style="flex: 1;">
+                                    <div style="font-size: 0.75rem; color: var(--text-tertiary);">Profession</div>
+                                    <div style="font-size: 0.9375rem; font-weight: 500;">${data.lead.profession}</div>
+                                </div>
+                            </div>
+
+                            <div class="profile-field">
+                                <div class="profile-icon">
+                                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="var(--agnt-orange)" stroke-width="1.5">
+                                        <path d="M15 6.5H3m12 0a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2m12 0V4a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2.5"></path>
+                                    </svg>
+                                </div>
+                                <div style="flex: 1;">
+                                    <div style="font-size: 0.75rem; color: var(--text-tertiary);">Email</div>
+                                    <div style="font-size: 0.875rem; font-weight: 500;">${data.lead.email}</div>
+                                </div>
+                            </div>
+
+                            <div class="profile-field">
+                                <div class="profile-icon">
+                                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="var(--agnt-orange)" stroke-width="1.5">
+                                        <path d="M16.5 12.75v2.25a1.5 1.5 0 0 1-1.635 1.5A14.77 14.77 0 0 1 8.4 14.4a14.55 14.55 0 0 1-4.5-4.5A14.77 14.77 0 0 1 1.8 3.435 1.5 1.5 0 0 1 3.285 1.8h2.25a1.5 1.5 0 0 1 1.5 1.29 9.645 9.645 0 0 0 .525 2.1"></path>
+                                    </svg>
+                                </div>
+                                <div style="flex: 1;">
+                                    <div style="font-size: 0.75rem; color: var(--text-tertiary);">Phone</div>
+                                    <div style="font-size: 0.875rem; font-weight: 500;">${data.lead.phone}</div>
+                                </div>
+                            </div>
+
+                            <div class="profile-field" style="border-bottom: none;">
+                                <div class="profile-icon">
+                                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="var(--agnt-orange)" stroke-width="1.5">
+                                        <path d="M3 7.5l6-4.5 6 4.5v6.75a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 3 14.25V7.5z"></path>
+                                    </svg>
+                                </div>
+                                <div style="flex: 1;">
+                                    <div style="font-size: 0.75rem; color: var(--text-tertiary);">Lead Source</div>
+                                    <div style="font-size: 0.875rem; font-weight: 500;">${data.lead.lead_source}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Location Info -->
+                        <div class="premium-card">
+                            <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 1.5rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-tertiary);">Location</h3>
+                            
+                            <div style="margin-bottom: 1rem;">
+                                <div style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.25rem;">${data.location.name}</div>
+                                <div style="font-size: 0.875rem; color: var(--text-secondary);">${data.location.street_address}</div>
+                                <div style="font-size: 0.875rem; color: var(--text-secondary);">${data.location.city}, ${data.location.state} ${data.location.zip_code}</div>
+                            </div>
+
+                            <div style="padding: 0.75rem; background: var(--surface-2); border-radius: 0.5rem;">
+                                <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-bottom: 0.25rem;">Location Manager</div>
+                                <div style="font-size: 0.875rem; font-weight: 500;">${data.location.manager_name}</div>
+                            </div>
+                        </div>
+
+                        <!-- Nurture Progress -->
+                        <div class="premium-card">
+                            <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 1.5rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-tertiary);">Nurture Progress</h3>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                                <div class="metric-card-small">
+                                    <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">Follow-Up</div>
+                                    <div style="font-size: 1.5rem; font-weight: 800;">${data.conversation.follow_up_attempt}/6</div>
+                                </div>
+                                <div class="metric-card-small">
+                                    <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">Messages</div>
+                                    <div style="font-size: 1.5rem; font-weight: 800;">${data.messages.length}</div>
+                                </div>
+                            </div>
+
+                            <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Milestones</div>
+                            ${data.conversation.goal_progress.milestones.map(m => `
+                                <div class="milestone-item" style="margin-bottom: 0.75rem;">
+                                    <div class="milestone-icon">
+                                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#10B981" stroke-width="2">
+                                            <polyline points="15 6 7.5 13.5 3 9"></polyline>
+                                        </svg>
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <div style="font-size: 0.875rem; font-weight: 500;">${m.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
+                                        <div style="font-size: 0.75rem; color: var(--text-secondary);">${new Date(m.timestamp).toLocaleDateString()}</div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <!-- AI Insights -->
+                        <div class="premium-card">
+                            <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 1.5rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-tertiary);">AI Insights</h3>
+                            
+                            <div style="margin-bottom: 1.5rem;">
+                                <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">Topics Discussed</div>
+                                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                    ${data.ai_insights.topics_discussed.map(topic => `
+                                        <span class="insight-tag">${topic}</span>
+                                    `).join('')}
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom: 1.5rem;">
+                                <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">Interests</div>
+                                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                    ${data.ai_insights.interests.map(interest => `
+                                        <span class="insight-tag">
+                                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="var(--agnt-orange)" stroke-width="1.5">
+                                                <path d="M6 1v10M1 6h10"></path>
+                                            </svg>
+                                            ${interest}
+                                        </span>
+                                    `).join('')}
+                                </div>
+                            </div>
+
+                            <div style="padding: 1rem; background: rgba(255, 127, 48, 0.05); border: 1px solid rgba(255, 127, 48, 0.1); border-radius: 0.75rem;">
+                                <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">Sentiment</div>
+                                <div style="font-size: 0.9375rem; font-weight: 600; color: var(--agnt-orange);">${data.ai_insights.sentiment}</div>
+                            </div>
+
+                            <div style="margin-top: 1rem; padding: 1rem; background: var(--surface-2); border-radius: 0.75rem;">
+                                <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">Next Action</div>
+                                <div style="font-size: 0.9375rem; font-weight: 600;">${data.ai_insights.next_action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Main Content Area - Message Thread -->
+                    <div class="premium-card" style="min-height: 600px;">
+                        <div style="display: flex; align-items: center; justify-content: between; margin-bottom: 2rem;">
+                            <h3 style="font-size: 1.25rem; font-weight: 700;">Conversation History</h3>
+                        </div>
+
+                        <div class="message-thread">
+                            ${data.messages.map(msg => `
+                                <div class="message-item ${msg.direction}">
+                                    <div class="message-avatar" style="${msg.direction === 'outbound' ? 'background: rgba(255, 127, 48, 0.1); border-color: var(--agnt-orange);' : ''}">
+                                        ${msg.direction === 'outbound' ? `
+                                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="var(--agnt-orange)" stroke-width="1.5">
+                                                <circle cx="10" cy="10" r="7"></circle>
+                                                <path d="M10 6v4l2 2"></path>
+                                            </svg>
+                                        ` : `
+                                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="var(--text-secondary)" stroke-width="1.5">
+                                                <path d="M16 17v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0z"></path>
+                                            </svg>
+                                        `}
+                                    </div>
+                                    <div class="message-bubble">
+                                        <div class="message-meta">
+                                            <span style="font-weight: 600;">${msg.direction === 'outbound' ? 'AI Assistant' : data.lead.name}</span>
+                                            <span>•</span>
+                                            <span>${new Date(msg.sent_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
+                                            <span style="text-transform: uppercase;">${msg.channel}</span>
+                                        </div>
+                                        <div class="message-content">${msg.content.replace(/\n/g, '<br>')}</div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        ${data.conversation.awaiting_reply ? `
+                            <div style="margin-top: 2rem; padding: 1.5rem; background: rgba(255, 127, 48, 0.05); border: 1px solid rgba(255, 127, 48, 0.2); border-radius: 1rem; text-align: center;">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--agnt-orange)" stroke-width="2" style="margin: 0 auto 0.75rem;">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <path d="M12 6v6l4 2"></path>
+                                </svg>
+                                <div style="font-weight: 600; margin-bottom: 0.25rem;">Awaiting Response</div>
+                                <div style="font-size: 0.875rem; color: var(--text-secondary);">Last message sent ${getTimeAgo(data.messages[data.messages.length - 1].sent_at)}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            
+            // Set the content in the correct element
+            content.innerHTML = detailHtml;
+            
+            // Switch to conversation detail view
+            document.getElementById('dashboardView').classList.remove('active');
+            document.getElementById('conversationsView').classList.remove('active');
+            document.getElementById('conversationDetailView').classList.add('active');
+        }
+
+        function backToConversations() {
+            document.getElementById('conversationDetailView').classList.remove('active');
+            document.getElementById('conversationsView').classList.add('active');
+        }
+
+        function backToDashboard() {
+            document.getElementById('conversationDetailView').classList.remove('active');
+            document.getElementById('dashboardView').classList.add('active');
+        }
+
+        // Initialize Charts
+        function initCharts() {
+            // Pipeline Chart
+            const pipelineCtx = document.getElementById('pipelineChart');
+            if (pipelineCtx) {
+                new Chart(pipelineCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                        datasets: [{
+                            label: 'Active',
+                            data: [1850, 1900, 1924, 1950],
+                            borderColor: '#FF7F30',
+                            backgroundColor: 'rgba(255, 127, 48, 0.1)',
+                            tension: 0.4
+                        }, {
+                            label: 'Completed',
+                            data: [480, 510, 547, 580],
+                            borderColor: '#10B981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { color: getThemeColors().text }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                grid: { color: getThemeColors().border },
+                                ticks: { color: getThemeColors().text }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: getThemeColors().text }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Cadence Chart
+            const cadenceCtx = document.getElementById('cadenceChart');
+            if (cadenceCtx) {
+                new Chart(cadenceCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Day 0', 'Day 2', 'Day 5', 'Day 10', 'Day 18', 'Day 27'],
+                        datasets: [{
+                            data: [847, 623, 412, 287, 156, 89],
+                            backgroundColor: [
+                                'rgba(255, 127, 48, 0.8)',
+                                'rgba(255, 127, 48, 0.7)',
+                                'rgba(255, 127, 48, 0.6)',
+                                'rgba(255, 127, 48, 0.5)',
+                                'rgba(255, 127, 48, 0.4)',
+                                'rgba(255, 127, 48, 0.3)'
+                            ],
+                            borderColor: '#FF7F30',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: {
+                                display: false
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: getThemeColors().text }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function getTimeAgo(timestamp) {
+            const now = new Date();
+            const then = new Date(timestamp);
+            const seconds = Math.floor((now - then) / 1000);
+            
+            if (seconds < 60) return `${seconds} seconds ago`;
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return `${minutes} minutes ago`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `${hours} hours ago`;
+            const days = Math.floor(hours / 24);
+            return `${days} days ago`;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initCharts();
+        });
+    </script>
+</body>
+</html>
