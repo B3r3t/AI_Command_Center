@@ -60,11 +60,9 @@ interface SupabaseLead {
 }
 
 export async function getDashboardData(
-  corporateAccountId: string,
-  fromIso: string,
-  toIso: string
+  corporateAccountId: string
 ): Promise<DashboardData> {
-  // Leads
+  // ALL-TIME LEADS FOR THIS CORPORATE
   const { data: leads, error: leadsError } = await supabaseAdmin
     .from("leads")
     .select(
@@ -76,14 +74,12 @@ export async function getDashboardData(
       )
     `
     )
-    .gte("created_at", fromIso)
-    .lte("created_at", toIso)
     .eq("locations.corporate_account_id", corporateAccountId);
 
   if (leadsError) throw leadsError;
   const totalLeads = (leads as SupabaseLead[] | null)?.length ?? 0;
 
-  // Conversations
+  // ALL-TIME CONVERSATIONS FOR THIS CORPORATE
   const { data: conversations, error: convError } = await supabaseAdmin
     .from("conversations")
     .select(
@@ -99,8 +95,6 @@ export async function getDashboardData(
       )
     `
     )
-    .gte("last_activity", fromIso)
-    .lte("last_activity", toIso)
     .eq("locations.corporate_account_id", corporateAccountId);
 
   if (convError) throw convError;
@@ -110,7 +104,7 @@ export async function getDashboardData(
     c => c.status === "active"
   ).length;
 
-  // Messages
+  // ALL-TIME MESSAGES FOR THIS CORPORATE
   const { data: messages, error: msgError } = await supabaseAdmin
     .from("messages")
     .select(
@@ -130,14 +124,12 @@ export async function getDashboardData(
       )
     `
     )
-    .gte("sent_at", fromIso)
-    .lte("sent_at", toIso)
     .eq("conversations.locations.corporate_account_id", corporateAccountId);
 
   if (msgError) throw msgError;
   const msgList = (messages as SupabaseMessage[] | null) ?? [];
 
-  // Response rate: active conversations with ≥1 inbound message in period
+  // RESPONSE RATE: active conversations with ≥1 inbound message
   const activeIds = new Set(
     convList.filter(c => c.status === "active").map(c => c.id)
   );
@@ -155,7 +147,7 @@ export async function getDashboardData(
   const responseRate =
     activeIds.size === 0 ? 0 : Math.round((respondedActive / activeIds.size) * 100);
 
-  // Pipeline
+  // PIPELINE
   const pipelineBuckets = new Map<
     string,
     { count: number; intentTotal: number; withIntent: number }
@@ -185,7 +177,7 @@ export async function getDashboardData(
     })
   );
 
-  // Cadence
+  // CADENCE
   const cadenceMap: Map<number, number> = new Map();
   for (const c of convList) {
     const attempt = c.follow_up_attempt ?? 0;
@@ -198,7 +190,7 @@ export async function getDashboardData(
     cadence.push({ attempt: i, count: cadenceMap.get(i) ?? 0 });
   }
 
-  // Channel stats (used later if you want to wire more UI)
+  // CHANNEL STATS
   function buildChannelStats(channelKey: "sms" | "email"): ChannelStats {
     const filtered = msgList.filter(
       m => m.channel === channelKey || m.channel === "both"
