@@ -3,16 +3,13 @@
 
 import { useEffect } from "react";
 
-interface DashboardHydratorProps {
-  range: string;
-}
-
-export function DashboardHydrator({ range }: DashboardHydratorProps) {
+export function DashboardHydrator() {
   useEffect(() => {
     async function run() {
       try {
-        const res = await fetch(`/api/dashboard?range=${encodeURIComponent(range)}`);
+        const res = await fetch("/api/dashboard");
         if (!res.ok) return;
+
         const data = await res.json();
 
         const hero = data.hero as {
@@ -41,7 +38,7 @@ export function DashboardHydrator({ range }: DashboardHydratorProps) {
     }
 
     run();
-  }, [range]);
+  }, []);
 
   return null;
 }
