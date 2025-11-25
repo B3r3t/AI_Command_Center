@@ -1,31 +1,46 @@
 // app/page.tsx
-import fs from "fs";
-import path from "path";
-import { DashboardHydrator } from "./DashboardHydrator";
-import type { RangeKey } from "@/lib/dateRange";
+import { getDashboardData } from "./_data/dashboard";
+import {
+  getConversationsForCorporate,
+  getConversationDetail,
+} from "./_data/conversations";
+import { ConversationsSection } from "./components/ConversationsSection";
 
-export const dynamic = "force-dynamic";
+export default async function DashboardPage() {
+  const corporateId = process.env.CORPORATE_ACCOUNT_ID;
 
-function getTemplateBody() {
-  const filePath = path.join(process.cwd(), "public", "dashboard.html");
-  const raw = fs.readFileSync(filePath, "utf8");
-  const match = raw.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-  return match ? match[1] : raw;
-}
+  if (!corporateId) {
+    throw new Error("CORPORATE_ACCOUNT_ID environment variable is not set");
+  }
 
-const templateBody = getTemplateBody();
+  const [dashboard, conversations] = await Promise.all([
+    getDashboardData(corporateId),
+    getConversationsForCorporate(corporateId),
+  ]);
 
-export default function Page({
-  searchParams
-}: {
-  searchParams: { range?: RangeKey };
-}) {
-  const range: RangeKey = searchParams.range ?? "7d";
+  const initialDetail =
+    conversations.length > 0
+      ? await getConversationDetail(corporateId, conversations[0].id)
+      : null;
+
+  const { hero, pipeline, sms, email, cadence } = dashboard;
 
   return (
-    <>
-      <div dangerouslySetInnerHTML={{ __html: templateBody }} />
-      <DashboardHydrator />
-    </>
-  );
-}
+    <div className="app-shell">
+      {/* HEADER */}
+      <header className="app-header">
+        <div className="app-header-left">
+          <div className="brand-mark">AGNTMKT</div>
+          <div className="header-title-block">
+            <h1 className="header-title">AI Command Center</h1>
+            <p className="header-subtitle">
+              IMAGE Studios – Conversation Performance
+            </p>
+          </div>
+        </div>
+        <div className="app-header-right">
+          <div className="header-pill">All Locations (IMAGE Studios)</div>
+        </div>
+      </header>
+
+      {/* BODY: sidebar + main */}
