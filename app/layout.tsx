@@ -1,17 +1,13 @@
 // app/layout.tsx
-import type { Metadata } from "next";
 import "./globals.css";
+import type { ReactNode } from "react";
 
-export const metadata: Metadata = {
-  title: "AGNTMKT Command Center",
-  description: "Conversation performance dashboard powered by Supabase"
+export const metadata = {
+  title: "AGNTMKT – AI Command Center",
+  description: "Conversation performance dashboard",
 };
 
-export default function RootLayout({
-  children
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>{children}</body>
