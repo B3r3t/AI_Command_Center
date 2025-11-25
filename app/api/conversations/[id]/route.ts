@@ -1,8 +1,13 @@
 // app/api/conversations/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getConversationDetail } from "@/app/_data/conversations";
+import { requireAuth } from "@/lib/auth";
 
 export async function GET(req: NextRequest, context: any) {
+  const authError = requireAuth(req);
+
+  if (authError) return authError;
+
   const corporateId = process.env.CORPORATE_ACCOUNT_ID;
 
   if (!corporateId) {
