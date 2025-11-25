@@ -24,6 +24,8 @@ export default async function DashboardPage() {
       : null;
 
   const { hero, pipeline, sms, email, cadence } = dashboard;
+  const totalPipelineCount = pipeline.reduce((sum, stage) => sum + stage.count, 0);
+  const safePipelineTotal = Math.max(1, totalPipelineCount);
 
   return (
     <div className="app-shell">
@@ -153,21 +155,10 @@ export default async function DashboardPage() {
                       <div
                         className="progress-bar-fill"
                         style={{
-                          width:
-                            hero.activeConversations + hero.totalLeads > 0
-                              ? `${Math.min(
-                                  100,
-                                  (stage.count /
-                                    Math.max(
-                                      1,
-                                      pipeline.reduce(
-                                        (sum, s) => sum + s.count,
-                                        0
-                                      )
-                                    )) *
-                                    100
-                                )}%`
-                              : "0%",
+                          width: `${Math.min(
+                            100,
+                            (stage.count / safePipelineTotal) * 100
+                          )}%`,
                         }}
                       />
                     </div>
