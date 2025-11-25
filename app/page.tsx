@@ -1,9 +1,6 @@
 // app/page.tsx
 import { getDashboardData } from "./_data/dashboard";
-import {
-  getConversationsForCorporate,
-  getConversationDetail,
-} from "./_data/conversations";
+import { getConversationDetail, getConversationList } from "./_data/conversations";
 import { ConversationsSection } from "./components/ConversationsSection";
 
 export default async function DashboardPage() {
@@ -15,7 +12,7 @@ export default async function DashboardPage() {
 
   const [dashboard, conversations] = await Promise.all([
     getDashboardData(corporateId),
-    getConversationsForCorporate(corporateId),
+    getConversationList(corporateId),
   ]);
 
   const initialDetail =

@@ -68,6 +68,7 @@ export async function getDashboardData(
     .select(
       `
       id,
+      location_id,
       created_at,
       locations!inner (
         corporate_account_id
