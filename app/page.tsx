@@ -25,7 +25,7 @@ export default function Page({
   return (
     <>
       <div dangerouslySetInnerHTML={{ __html: templateBody }} />
-      <DashboardHydrator range={range} />
+      <DashboardHydrator />
     </>
   );
 }
