@@ -1,4 +1,5 @@
 // app/_data/conversations.ts
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 
 export interface ConversationListItem {
@@ -52,9 +53,10 @@ export interface ConversationDetail {
 
 // List view – last 50 conversations for a corporate account
 export async function getConversationList(
-  corporateAccountId: string
+  corporateAccountId: string,
+  client: SupabaseClient = supabaseAdmin
 ): Promise<ConversationListItem[]> {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await client
     .from("conversations")
     .select(
       `
@@ -119,9 +121,10 @@ export async function getConversationList(
 // Detail view – single conversation + lead + location + messages
 export async function getConversationDetail(
   corporateAccountId: string,
-  conversationId: string
+  conversationId: string,
+  client: SupabaseClient = supabaseAdmin
 ): Promise<ConversationDetail | null> {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await client
     .from("conversations")
     .select(
       `
