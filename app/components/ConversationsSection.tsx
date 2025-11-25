@@ -1,7 +1,7 @@
 // app/components/ConversationsSection.tsx
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import type {
   ConversationListItem,
   ConversationDetail,
@@ -17,10 +17,13 @@ function formatRelativeTime(iso: string | null) {
   const d = new Date(iso);
   const diffMs = Date.now() - d.getTime();
   const diffMin = Math.round(diffMs / 60000);
+
   if (diffMin < 1) return "just now";
   if (diffMin < 60) return `${diffMin} min ago`;
+
   const diffHours = Math.round(diffMin / 60);
   if (diffHours < 24) return `${diffHours} hr${diffHours === 1 ? "" : "s"} ago`;
+
   const diffDays = Math.round(diffHours / 24);
   return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
 }
@@ -65,13 +68,14 @@ export function ConversationsSection({
     if (id === selectedId) return;
     setSelectedId(id);
     setLoading(true);
+
     try {
       const res = await fetch(`/api/conversations/${id}`);
       if (!res.ok) throw new Error("Failed to load conversation");
       const data = (await res.json()) as ConversationDetail;
       setDetail(data);
     } catch (err) {
-      console.error(err);
+      console.error("Error loading conversation detail", err);
     } finally {
       setLoading(false);
     }
@@ -105,14 +109,13 @@ export function ConversationsSection({
           <tbody>
             {conversations.map((c) => {
               const isSelected = c.id === selectedId;
-              const rowStatus = (c.status ?? "").toLowerCase();
-              const rowChannel = (c.primaryChannel ?? "").toLowerCase();
+              const s = (c.status ?? "").toLowerCase();
+              const ch = (c.primaryChannel ?? "").toLowerCase();
+
               return (
                 <tr
                   key={c.id}
-                  className={`clickable ${
-                    isSelected ? "row-selected" : ""
-                  }`}
+                  className={`clickable ${isSelected ? "row-selected" : ""}`}
                   onClick={() => handleSelect(c.id)}
                 >
                   <td>
@@ -137,24 +140,28 @@ export function ConversationsSection({
                   <td>
                     <span
                       className={
-                        statusClass[rowStatus] ?? "status-badge status-default"
+                        statusClass[s] ?? "status-badge status-default"
                       }
                     >
-                      {statusLabel[rowStatus] ?? rowStatus || "Unknown"}
+                      {statusLabel[s] ?? c.status ?? "Unknown"}
                     </span>
                   </td>
                   <td>
                     <span
                       className={
-                        channelClass[rowChannel] ??
-                        "channel-badge channel-default"
+                        channelClass[ch] ?? "channel-badge channel-default"
                       }
                     >
-                      {rowChannel.toUpperCase() || "N/A"}
+                      {ch ? ch.toUpperCase() : "N/A"}
                     </span>
                   </td>
                   <td>
-                    <div style={{ fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
+                    <div
+                      style={{
+                        fontWeight: 600,
+                        fontVariantNumeric: "tabular-nums",
+                      }}
+                    >
                       {c.intentScore ?? "–"}
                     </div>
                   </td>
@@ -175,7 +182,7 @@ export function ConversationsSection({
         </table>
       </div>
 
-      {/* RIGHT: Lead profile + messages + insight */}
+      {/* RIGHT: Lead profile + messages + health */}
       <div
         className="conversation-detail-grid"
         style={{
@@ -187,7 +194,7 @@ export function ConversationsSection({
           alignItems: "flex-start",
         }}
       >
-        {/* Lead Profile card */}
+        {/* Lead Profile */}
         <div className="premium-card" style={{ gridRow: "1 / span 2" }}>
           <h3
             style={{
@@ -278,7 +285,7 @@ export function ConversationsSection({
           )}
         </div>
 
-        {/* Conversation history */}
+        {/* Conversation History */}
         <div
           className="premium-card"
           style={{ minHeight: 400, gridColumn: "2 / 3" }}
@@ -346,7 +353,7 @@ export function ConversationsSection({
           </div>
         </div>
 
-        {/* Conversation insight / health */}
+        {/* Conversation Health */}
         <div className="premium-card" style={{ gridColumn: "2 / 3" }}>
           <h3
             style={{
@@ -363,7 +370,9 @@ export function ConversationsSection({
               <div className="insight-item">
                 <div className="insight-label">Status</div>
                 <div className="insight-value">
-                  {statusLabel[(detail.conversation.status ?? "").toLowerCase()] ??
+                  {statusLabel[
+                    (detail.conversation.status ?? "").toLowerCase()
+                  ] ??
                     detail.conversation.status ??
                     "Unknown"}
                 </div>
@@ -387,3 +396,26 @@ export function ConversationsSection({
                 </div>
               </div>
               <div className="insight-item">
+                <div className="insight-label">Last Activity</div>
+                <div className="insight-value">
+                  {formatRelativeTime(detail.conversation.lastActivity)}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p
+              style={{
+                fontSize: "0.9rem",
+                color: "var(--text-secondary)",
+              }}
+            >
+              Select a conversation to view AI signals and status.
+            </p>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export default ConversationsSection;
