@@ -3,6 +3,7 @@ import "./globals.css";
 import type { ReactNode } from "react";
 
 export const metadata = {
+  metadataBase: new URL(defaultUrl),
   title: "AGNTMKT – AI Command Center",
   description: "Conversation performance dashboard",
 };
